@@ -20,18 +20,22 @@ public class PayPalController {
     public static final String RETURN_URL = "https://example.com/aprove";
     public static final String CANCEL_URL = "https://example.com/return";
 
+    public String clientId = "AZGNaxtL_IE4kyAE1B_z3ZfcBiTFYqtlLLBPF1Xl9l1ayULedWlRw99KcNV5RmdQMO_YmceWKBqCqqay";
+    public String clientSecret = "EMW9_CDav9jiDtfGr8N2llSzRjU5BeGp2CbTpuTmJmPFk3qQL1vLpuEHbwyDquyeLunEwasqxsPeV3bh";
+
     @GetMapping("")
     public String home() {
         return "paypal home";
     }
 
     @PostMapping("/pay")
-    public String payment(@RequestBody Order order) {
+    public String createPayment(@RequestBody Order order) {
         try {
             Payment payment = service.createPayment(order.getPrice(), order.getCurrency(), order.getMethod(),
                     order.getIntent(), order.getDescription(), RETURN_URL,
                      CANCEL_URL, order.getClientId(), order.getClientSecret());
             logger.info("Paypal payment object created.");
+            System.out.println(payment.toJSON());
             for(Links link:payment.getLinks()) {
                 if(link.getRel().equals("approval_url")) {
                     logger.info("Paypal api link for redirection.");
@@ -51,19 +55,25 @@ public class PayPalController {
         return "cancel";
     }
 
-    @GetMapping("success")
-    public String successPay(@RequestParam("paymentId") String paymentId, @RequestParam("PayerID") String payerId) {
+    @GetMapping("/success")
+    public String approvePayment(@RequestParam("paymentId") String paymentId, @RequestParam("PayerID") String payerId) {
         try {
-            Payment payment = service.executePayment(paymentId, payerId);
+            Payment payment = service.executePayment(paymentId, payerId, clientId ,clientSecret );
             System.out.println(payment.toJSON());
             if (payment.getState().equals("approved")) {
+                service.savePayment(payment);
+                logger.info("Paypal payment finished.");
+              //  service.browse(RETURN_URL);
+
                 return "success";
             }
         } catch (PayPalRESTException e) {
             System.out.println(e.getMessage());
+            logger.error("Exception with finalizing paypal payment. Error is: " + e );
+          //  service.browse(CANCEL_URL);
         }
-        return "redirect:/";
+        return "error";
     }
 
 
-    }
+}
