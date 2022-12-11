@@ -17,8 +17,8 @@ public class PayPalController {
 
     Logger logger = LoggerFactory.getLogger(PayPalController.class);
 
-    public static final String SUCCESS_URL = "pay/success";
-    public static final String CANCEL_URL = "pay/cancel";
+    public static final String RETURN_URL = "https://example.com/aprove";
+    public static final String CANCEL_URL = "https://example.com/return";
 
     @GetMapping("")
     public String home() {
@@ -29,21 +29,21 @@ public class PayPalController {
     public String payment(@RequestBody Order order) {
         try {
             Payment payment = service.createPayment(order.getPrice(), order.getCurrency(), order.getMethod(),
-                    order.getIntent(), order.getDescription(), "http://localhost:8080/#/paypal home",
-                    "http://localhost:8080/#/payPalParams", order.getClientId(), order.getClientSecret());
+                    order.getIntent(), order.getDescription(), RETURN_URL,
+                     CANCEL_URL, order.getClientId(), order.getClientSecret());
             logger.info("Paypal payment object created.");
             for(Links link:payment.getLinks()) {
                 if(link.getRel().equals("approval_url")) {
-                    logger.info("Sending paypal api link for redirection.");
+                    logger.info("Paypal api link for redirection.");
                     return link.getHref();
                 }
             }
 
         } catch (PayPalRESTException e) {
-            logger.error("Exception with creating paypal payment object. Error is: " + e );
+            logger.error("Exception when creating paypal payment object. Error is: " + e );
             e.printStackTrace();
         }
-        return "greska";
+        return "link";
     }
 
     @GetMapping(value = CANCEL_URL)
@@ -51,7 +51,7 @@ public class PayPalController {
         return "cancel";
     }
 
-    @GetMapping(value = SUCCESS_URL)
+    @GetMapping("success")
     public String successPay(@RequestParam("paymentId") String paymentId, @RequestParam("PayerID") String payerId) {
         try {
             Payment payment = service.executePayment(paymentId, payerId);

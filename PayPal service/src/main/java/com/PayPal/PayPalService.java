@@ -11,10 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class PayPalService {
@@ -34,8 +31,9 @@ public class PayPalService {
             String clientSecret) throws PayPalRESTException {
         Amount amount = new Amount();
         amount.setCurrency(currency);
-        total = new BigDecimal(total).setScale(2, RoundingMode.HALF_UP).doubleValue();
-        amount.setTotal(String.format("%.2f", total));
+        total = new BigDecimal(total).setScale(2, RoundingMode.HALF_EVEN).doubleValue();
+        amount.setTotal(String.format(Locale.ROOT, "%.2f", total));
+
 
         Transaction transaction = new Transaction();
         transaction.setDescription(description);
