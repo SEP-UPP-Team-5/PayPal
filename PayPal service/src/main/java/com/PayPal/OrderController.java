@@ -2,12 +2,12 @@ package com.PayPal;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 
 @RestController
 @RequestMapping("/orders")
@@ -15,35 +15,33 @@ import java.net.URISyntaxException;
 public class OrderController {
     @Autowired
     private OrderService orderService;
-    private String orderId = "";
+
+    Logger logger = LoggerFactory.getLogger(OrderService.class);
 
 
-    @GetMapping("/capture")   //2. posle logovanja i kliktanja na dugme u paypalu
+    @GetMapping("/capture")
     public String captureOrder(@RequestParam String token) throws IOException {
-        orderId = token;
+        String orderId = token;
         orderService.captureOrder(token);
         return "redirect:/orders"; // stavi redirect nazad na front new RedirectView....
     }
 
-    @PostMapping  //1. kreira link za preusmeravanje na paypal
-    public String placeOrder(@RequestParam Double totalAmount, HttpServletRequest request) throws IOException {
-        final URI returnUrl = buildReturnUrl(request);
-        Order order = orderService.createOrder(totalAmount, returnUrl);
-        orderService.browse(order.getApprovalLink().toString());
-        return "redirect:"+ order.getApprovalLink();
-    }
-
-    private URI buildReturnUrl(HttpServletRequest request) {
+    @PostMapping
+    public String createOrder(@RequestParam Double totalAmount, HttpServletRequest request) throws IOException{
         try {
-            URI requestUri = URI.create(request.getRequestURL().toString());
-            return new URI(requestUri.getScheme(),
-                    requestUri.getUserInfo(),
-                    requestUri.getHost(),
-                    requestUri.getPort(),
-                    "/orders/capture",
-                    null, null);
-        } catch (URISyntaxException e) {
+            final URI returnUrl = orderService.buildReturnUrl(request);
+            Order order = orderService.createOrder(totalAmount, returnUrl);
+            logger.info("Paypal order object created and approval link for redirection.");
+            System.out.println(order);
+            orderService.browse(order.getApprovalLink().toString());
+        } catch (Exception e) {
+            logger.error("Exception with creating paypal order object. Error is: " + e);
+            e.printStackTrace();
             throw new RuntimeException(e);
         }
+
+        return "redirect: approval link";
     }
+
+
 }
