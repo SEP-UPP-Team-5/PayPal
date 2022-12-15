@@ -1,5 +1,6 @@
 package com.PayPal;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.paypal.core.PayPalEnvironment;
 import com.paypal.core.PayPalHttpClient;
 import com.paypal.http.HttpResponse;
@@ -7,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import com.paypal.orders.*;
@@ -15,13 +17,18 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 @Service
 @Slf4j
 public class OrderService {
     private final String APPROVAL_LINK = "approve";
     private final PayPalHttpClient payPalHttpClient;
+
+    @Autowired
+    private PaymentInfoRepository paymentInfoRepository;
 
     Logger logger = LoggerFactory.getLogger(OrderService.class);
 
@@ -46,7 +53,15 @@ public class OrderService {
         final HttpResponse<com.paypal.orders.Order> httpResponse = payPalHttpClient.execute(ordersCaptureRequest);
         logger.info("Order: ID:" +  httpResponse.result().id() + ", status:{}", httpResponse.result().status());
 
+        PaymentInfo paymentInfo = new PaymentInfo();
+        paymentInfo.setPaymentId(httpResponse.result().id());
+        paymentInfo.setPayerId(httpResponse.result().payer().payerId());
+       // paymentInfo.setAmount(httpResponse.result().purchaseUnits().get(0).amountWithBreakdown().value());
+        paymentInfo.setCurrency("USD");
+        paymentInfo.setDate(new Date().toString());
+        paymentInfoRepository.save(paymentInfo);
     }
+
 
     private OrderRequest createOrderRequest(Double totalAmount, URI returnUrl) {
         final OrderRequest orderRequest = new OrderRequest();
