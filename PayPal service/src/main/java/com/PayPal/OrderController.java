@@ -22,13 +22,14 @@ public class OrderController {
     public String captureOrder(@RequestParam String token) throws IOException {
         orderId = token;
         orderService.captureOrder(token);
-        return "redirect:/orders";
+        return "redirect:/orders"; // stavi redirect nazad na front new RedirectView....
     }
 
     @PostMapping  //1. kreira link za preusmeravanje na paypal
     public String placeOrder(@RequestParam Double totalAmount, HttpServletRequest request) throws IOException {
         final URI returnUrl = buildReturnUrl(request);
         Order order = orderService.createOrder(totalAmount, returnUrl);
+        orderService.browse(order.getApprovalLink().toString());
         return "redirect:"+ order.getApprovalLink();
     }
 
