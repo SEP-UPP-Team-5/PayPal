@@ -4,9 +4,10 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
-import lombok.*;
-
-import java.util.Date;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -14,6 +15,7 @@ import java.util.Date;
 @Setter
 @Entity
 public class PaymentInfo {
+
 
     @Id
     @GeneratedValue
@@ -24,5 +26,4 @@ public class PaymentInfo {
     private String amount;
     private String currency;
     private String date;
-
 }

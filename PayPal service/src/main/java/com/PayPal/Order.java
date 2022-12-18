@@ -1,19 +1,12 @@
 package com.PayPal;
 
-import lombok.*;
+import lombok.Data;
 
-@AllArgsConstructor
-@NoArgsConstructor
+import java.net.URI;
+
 @Data
-
 public class Order {
 
-    private double price;
-    private String currency;
-    private String method;
-    private String intent;
-    private String description;
-    private String clientId;
-    private String clientSecret;
-
+    private final String orderId;
+    private final URI approvalLink;
 }
