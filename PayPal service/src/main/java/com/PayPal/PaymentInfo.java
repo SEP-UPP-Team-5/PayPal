@@ -22,7 +22,7 @@ public class PaymentInfo {
     @Column(unique=true, nullable=false)
     private Long id;
     private String paymentId;
-    private String payerId;
+    private String payerId;  //PayPal account id
     private String amount;
     private String currency;
     private String date;
