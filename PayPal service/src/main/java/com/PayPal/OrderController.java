@@ -1,5 +1,6 @@
 package com.PayPal;
 
+import com.google.gson.Gson;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -8,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.net.URI;
+
 
 @RestController
 @RequestMapping("/orders")
@@ -23,14 +25,15 @@ public class OrderController {
     public String captureOrder(@RequestParam String token) throws IOException {
         String orderId = token;
         orderService.captureOrder(token);
-        return "redirect:/orders"; // stavi redirect nazad na front new RedirectView....
+        return "redirect:"; // stavi redirect nazad na front new RedirectView....
     }
 
     @PostMapping
     public String createOrder(@RequestParam Double totalAmount, HttpServletRequest request) throws IOException{
         try {
             final URI returnUrl = orderService.buildReturnUrl(request);
-            Order order = orderService.createOrder(totalAmount, returnUrl);
+            String webShopId = "BAGSGQXCCH7WU";
+            Order order = orderService.createOrder(totalAmount, returnUrl, webShopId);
             logger.info("Paypal order object created and approval link for redirection.");
             System.out.println(order);
             orderService.browse(order.getApprovalLink().toString());
@@ -40,7 +43,7 @@ public class OrderController {
             throw new RuntimeException(e);
         }
 
-        return "redirect: approval link";
+        return "redirect: approval_link";
     }
 
 
