@@ -15,6 +15,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.servlet.view.RedirectView;
 
 import java.io.IOException;
 import java.net.URI;
@@ -34,7 +35,7 @@ public class OrderController {
 
 
     @GetMapping("/capture")
-    public String captureOrder(@RequestParam String token) throws IOException {
+    public RedirectView captureOrder(@RequestParam String token) throws IOException {
         String orderId = token;
         orderService.captureOrder(token);
 
@@ -56,7 +57,9 @@ public class OrderController {
         HttpEntity<String> request = new HttpEntity<>(obj.toString(), headers);
         String paymentResponse = restTemplate.postForObject(url +"/purchase/confirm", request, String.class);    //TODO response class
         System.out.println(paymentResponse);
-        return "redirect:"; // stavi redirect nazad na front new RedirectView....
+
+
+        return new RedirectView("http://localhost:4200/confirmation"); // stavi redirect nazad na front new RedirectView....
     }
 /*
     @PostMapping
