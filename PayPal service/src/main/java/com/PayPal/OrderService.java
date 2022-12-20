@@ -37,7 +37,7 @@ public class OrderService {
         payPalHttpClient = new PayPalHttpClient(new PayPalEnvironment.Sandbox(clientId, clientSecret));
     }
 
-    public Order createOrder(Double totalAmount, URI returnUrl, String webShopId) throws IOException {
+    public Order createOrder(Double totalAmount, URI returnUrl, String webShopId, String applicationName) throws IOException {
         final OrderRequest orderRequest = createOrderRequest(totalAmount, returnUrl, webShopId);
         System.out.println("orderRequest");
         System.out.println(new Gson().toJson(orderRequest));
@@ -50,7 +50,7 @@ public class OrderService {
 
         logger.info("Order: ID:" +  orderHttpResponse.result().id() + ", status:{}", orderHttpResponse.result().status());
 
-        return new Order(order.id(), URI.create(approveUri.href()));
+        return new Order(order.id(), URI.create(approveUri.href()), applicationName);
     }
 
     public void captureOrder(String orderId) throws IOException {
