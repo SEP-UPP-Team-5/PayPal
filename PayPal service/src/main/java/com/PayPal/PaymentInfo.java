@@ -26,4 +26,6 @@ public class PaymentInfo {
     private String amount;
     private String currency;
     private String date;
+    private String applicationName;
+    private String status;
 }

@@ -14,11 +14,9 @@ import org.springframework.stereotype.Service;
 import com.paypal.orders.*;
 import java.awt.*;
 import java.io.IOException;
-import java.lang.reflect.ParameterizedType;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.NoSuchElementException;
 
 @Service
@@ -39,13 +37,9 @@ public class OrderService {
 
     public Order createOrder(Double totalAmount, URI returnUrl, String webShopId, String applicationName) throws IOException {
         final OrderRequest orderRequest = createOrderRequest(totalAmount, returnUrl, webShopId);
-        System.out.println("orderRequest");
-        System.out.println(new Gson().toJson(orderRequest));
         final OrdersCreateRequest ordersCreateRequest = new OrdersCreateRequest().requestBody(orderRequest);
         final HttpResponse<com.paypal.orders.Order> orderHttpResponse = payPalHttpClient.execute(ordersCreateRequest);
         final com.paypal.orders.Order order = orderHttpResponse.result();
-        System.out.println("order");
-        System.out.println(new Gson().toJson(order));
         LinkDescription approveUri = extractApprovalLink(order);
 
         logger.info("Order: ID:" +  orderHttpResponse.result().id() + ", status:{}", orderHttpResponse.result().status());
@@ -53,13 +47,11 @@ public class OrderService {
         return new Order(order.id(), URI.create(approveUri.href()), applicationName);
     }
 
-    public void captureOrder(String orderId) throws IOException {
+    public void captureOrder(String orderId, String webShopId) throws IOException {
         final OrdersCaptureRequest ordersCaptureRequest = new OrdersCaptureRequest(orderId);
         final HttpResponse<com.paypal.orders.Order> httpResponse = payPalHttpClient.execute(ordersCaptureRequest);
 
-        System.out.println("httpResponse");
-        System.out.println(new Gson().toJson(httpResponse.result()));
-        logger.info("Order: ID:" +  httpResponse.result().id() + ", status:{}", httpResponse.result().status());
+        logger.info("Order: ID:" +  httpResponse.result().id() + ", price: " + httpResponse.result().purchaseUnits().get(0).payments().captures().get(0).amount().value() + ", status:{}", httpResponse.result().status() + ", payerId: " + httpResponse.result().payer().payerId());
 
         PaymentInfo paymentInfo = new PaymentInfo();
         paymentInfo.setPaymentId(httpResponse.result().id());
@@ -67,6 +59,8 @@ public class OrderService {
         paymentInfo.setAmount(httpResponse.result().purchaseUnits().get(0).payments().captures().get(0).amount().value());
         paymentInfo.setCurrency(httpResponse.result().purchaseUnits().get(0).payments().captures().get(0).amount().currencyCode());
         paymentInfo.setDate(httpResponse.result().purchaseUnits().get(0).payments().captures().get(0).createTime());
+        paymentInfo.setStatus(httpResponse.result().status());
+        paymentInfo.setApplicationName(webShopId);
         paymentInfoRepository.save(paymentInfo);
     }
 

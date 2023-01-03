@@ -27,21 +27,19 @@ import java.net.URI;
 public class OrderController {
     @Autowired
     private OrderService orderService;
-
     @Autowired
     private LoadBalancerClient loadBalancerClient;
-
     Logger logger = LoggerFactory.getLogger(OrderService.class);
-
 
     @GetMapping("/capture")
     public RedirectView captureOrder(@RequestParam String token) throws IOException {
-        String orderId = token;
-        orderService.captureOrder(token);
 
+        String orderId = token;
         ServiceInstance serviceInstance = loadBalancerClient.choose("web-shop");
         URI url = serviceInstance.getUri();
-        System.out.println(url);
+        String webShopId = serviceInstance.getServiceId();
+
+        orderService.captureOrder(token, webShopId);
 
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
@@ -56,29 +54,10 @@ public class OrderController {
 
         HttpEntity<String> request = new HttpEntity<>(obj.toString(), headers);
         String paymentResponse = restTemplate.postForObject(url +"/purchase/confirm", request, String.class);    //TODO response class
-        System.out.println(paymentResponse);
 
-
-        return new RedirectView("http://localhost:4200/confirmation"); // stavi redirect nazad na front new RedirectView....
+        return new RedirectView("http://localhost:4200/confirmation");
     }
-/*
-    @PostMapping
-    public String createOrder(@RequestParam Double totalAmount, HttpServletRequest request) throws IOException{
-        try {
-            final URI returnUrl = orderService.buildReturnUrl(request);
-            String webShopId = "BAGSGQXCCH7WU";
-            Order order = orderService.createOrder(totalAmount, returnUrl, webShopId, "");
-            logger.info("Paypal order object created and approval link for redirection.");
-            System.out.println(order);
-            orderService.browse(order.getApprovalLink().toString());
-        } catch (Exception e) {
-            logger.error("Exception with creating paypal order object. Error is: " + e);
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
 
-        return "redirect: approval_link";
-    }*/
 
     @PostMapping("/create")
     public CreatePaymentResponseDTO creatingOrder(@RequestBody CreatePaymentDTO createPaymentDTO, HttpServletRequest request){
@@ -88,17 +67,15 @@ public class OrderController {
             String webShopId = createPaymentDTO.getMerchantId();
             Order order = orderService.createOrder(createPaymentDTO.getPrice(), returnUrl, webShopId, createPaymentDTO.applicationName);
             logger.info("Paypal order object created and approval link for redirection.");
-            System.out.println(order);
             orderService.browse(order.getApprovalLink().toString());
 
             return new CreatePaymentResponseDTO(returnUrl.toString(), order.getOrderId());
+
         } catch (Exception e) {
             logger.error("Exception with creating paypal order object. Error is: " + e);
             e.printStackTrace();
             throw new RuntimeException(e);
         }
-
-
     }
 
 
