@@ -35,7 +35,7 @@ public class OrderService {
         payPalHttpClient = new PayPalHttpClient(new PayPalEnvironment.Sandbox(clientId, clientSecret));
     }
 
-    public Order createOrder(Double totalAmount, URI returnUrl, String webShopId, String applicationName) throws IOException {
+    public Order createOrder(Double totalAmount, URI returnUrl, String webShopId) throws IOException {
         final OrderRequest orderRequest = createOrderRequest(totalAmount, returnUrl, webShopId);
         final OrdersCreateRequest ordersCreateRequest = new OrdersCreateRequest().requestBody(orderRequest);
         final HttpResponse<com.paypal.orders.Order> orderHttpResponse = payPalHttpClient.execute(ordersCreateRequest);
@@ -44,10 +44,10 @@ public class OrderService {
 
         logger.info("Order: ID:" +  orderHttpResponse.result().id() + ", status:{}", orderHttpResponse.result().status());
 
-        return new Order(order.id(), URI.create(approveUri.href()), applicationName);
+        return new Order(order.id(), URI.create(approveUri.href()));
     }
 
-    public void captureOrder(String orderId, String webShopId) throws IOException {
+    public void captureOrder(String orderId) throws IOException {
         final OrdersCaptureRequest ordersCaptureRequest = new OrdersCaptureRequest(orderId);
         final HttpResponse<com.paypal.orders.Order> httpResponse = payPalHttpClient.execute(ordersCaptureRequest);
 
@@ -60,15 +60,14 @@ public class OrderService {
         paymentInfo.setCurrency(httpResponse.result().purchaseUnits().get(0).payments().captures().get(0).amount().currencyCode());
         paymentInfo.setDate(httpResponse.result().purchaseUnits().get(0).payments().captures().get(0).createTime());
         paymentInfo.setStatus(httpResponse.result().status());
-        paymentInfo.setApplicationName(webShopId);
         paymentInfoRepository.save(paymentInfo);
     }
 
 
-    private OrderRequest createOrderRequest(Double totalAmount, URI returnUrl, String webShopId) {
+    private OrderRequest createOrderRequest(Double totalAmount, URI returnUrl, String merchantId) {
         final OrderRequest orderRequest = new OrderRequest();
         setCheckoutIntent(orderRequest);  // CAPTURE, AUTHORIZE
-        setPurchaseUnits(totalAmount, webShopId, orderRequest);
+        setPurchaseUnits(totalAmount, merchantId, orderRequest);
         setApplicationContext(returnUrl, orderRequest);
         System.out.println("Creating order request");
 
@@ -78,10 +77,10 @@ public class OrderService {
         return orderRequest.applicationContext(new ApplicationContext().returnUrl(returnUrl.toString()));
     }
 
-    private void setPurchaseUnits(Double totalAmount, String webShopId, OrderRequest orderRequest) {
+    private void setPurchaseUnits(Double totalAmount, String merchantId, OrderRequest orderRequest) {
         final PurchaseUnitRequest purchaseUnitRequest = new PurchaseUnitRequest()
                 .amountWithBreakdown(new AmountWithBreakdown().currencyCode("USD").value(totalAmount.toString()))
-                .payee(new Payee().merchantId(webShopId));
+                .payee(new Payee().merchantId(merchantId));
         orderRequest.purchaseUnits(Arrays.asList(purchaseUnitRequest));
     }
 

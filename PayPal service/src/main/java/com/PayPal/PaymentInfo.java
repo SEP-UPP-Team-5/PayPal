@@ -21,11 +21,11 @@ public class PaymentInfo {
     @GeneratedValue
     @Column(unique=true, nullable=false)
     private Long id;
-    private String paymentId;
+    private String paymentId;  //transaction id sa paypala
     private String payerId;  //PayPal account id
     private String amount;
-    private String currency;
-    private String date;
-    private String applicationName;
+    private String currency; //poslati sa webshopa????????
+    private String date; // vreme kad je izvrseno placanje na paypalu
     private String status;
+    private String merchantId;
 }

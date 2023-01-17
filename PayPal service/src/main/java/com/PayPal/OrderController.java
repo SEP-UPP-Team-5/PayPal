@@ -1,5 +1,6 @@
 package com.PayPal;
 
+import com.PayPal.dto.CreateOrderFromPaymentInfoDTO;
 import com.google.gson.Gson;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -35,37 +36,33 @@ public class OrderController {
     public RedirectView captureOrder(@RequestParam String token) throws IOException {
 
         String orderId = token;
-        ServiceInstance serviceInstance = loadBalancerClient.choose("web-shop");
-        URI url = serviceInstance.getUri();
-        String webShopId = serviceInstance.getServiceId();
+        String pspUrl = "http://localhost:8761/paymentInfo/confirm";
 
-        orderService.captureOrder(token, webShopId);
+        orderService.captureOrder(token);
 
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        //TODO: headers.setBearerAuth(token);
         JSONObject obj = new JSONObject();
         try {
-            obj.put("purchaseId", orderId);
+            obj.put("transactionId", orderId);
         } catch (JSONException e) {
             e.printStackTrace();
         }
 
         HttpEntity<String> request = new HttpEntity<>(obj.toString(), headers);
-        String paymentResponse = restTemplate.postForObject(url +"/purchase/confirm", request, String.class);    //TODO response class
+        String paymentResponse = restTemplate.postForObject(pspUrl, request, String.class);
 
         return new RedirectView("http://localhost:4200/confirmation");
     }
 
 
     @PostMapping("/create")
-    public CreatePaymentResponseDTO creatingOrder(@RequestBody CreatePaymentDTO createPaymentDTO, HttpServletRequest request){
+    public CreatePaymentResponseDTO creatingOrder(@RequestBody CreateOrderFromPaymentInfoDTO dto, HttpServletRequest request){
 
         try {
             final URI returnUrl = orderService.buildReturnUrl(request);
-            String webShopId = createPaymentDTO.getMerchantId();
-            Order order = orderService.createOrder(createPaymentDTO.getPrice(), returnUrl, webShopId, createPaymentDTO.applicationName);
+            Order order = orderService.createOrder(dto.getTotalAmount(), returnUrl, dto.getMerchantId());
             logger.info("Paypal order object created and approval link for redirection.");
             orderService.browse(order.getApprovalLink().toString());
 

@@ -11,7 +11,6 @@ public class Order {
 
     private final String orderId;
     private final URI approvalLink;
-    private final String applicationName;
 
     public String toString() {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
