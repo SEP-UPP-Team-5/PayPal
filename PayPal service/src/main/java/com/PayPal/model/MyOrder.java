@@ -4,8 +4,6 @@ package com.PayPal.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.net.URI;
-
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -17,7 +15,7 @@ public class MyOrder {
     @Column(name = "id", nullable = false)
     private Long id;
     private String payPalOrderId;
-    private URI approvalLink;
+    private String approvalLink;
     private String webShopOrderId;
 
 }

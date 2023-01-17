@@ -1,4 +1,4 @@
-package com.PayPal;
+package com.PayPal.service;
 
 import com.PayPal.dto.CreateOrderFromPaymentInfoDTO;
 import com.PayPal.model.MyOrder;
@@ -51,8 +51,8 @@ public class OrderService {
         final com.paypal.orders.Order order = orderHttpResponse.result();
         LinkDescription approveUri = extractApprovalLink(order);
         logger.info("Order: ID:" +  orderHttpResponse.result().id() + ", status:{}", orderHttpResponse.result().status());
-
-        return orderRepository.save(new MyOrder( 1l, order.id(), URI.create(approveUri.href()), dto.getOrderId())) ;
+        URI appUri = URI.create(approveUri.href());
+        return orderRepository.save(new MyOrder( 1l, order.id(), appUri.toString(), dto.getOrderId())) ;
     }
 
     public void captureOrder(String orderId) throws IOException {

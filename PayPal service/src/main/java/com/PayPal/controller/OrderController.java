@@ -1,8 +1,9 @@
-package com.PayPal;
+package com.PayPal.controller;
 
 import com.PayPal.dto.CreateOrderFromPaymentInfoDTO;
 import com.PayPal.dto.CreatePaymentResponseDTO;
 import com.PayPal.model.MyOrder;
+import com.PayPal.service.OrderService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.codehaus.jettison.json.JSONException;
@@ -69,7 +70,7 @@ public class OrderController {
             final URI returnUrl = orderService.buildReturnUrl(request);
             MyOrder order = orderService.createOrder(dto, returnUrl);
             logger.info("Paypal order object created and approval link for redirection.");
-            orderService.browse(order.getApprovalLink().toString());
+            orderService.browse(order.getApprovalLink());
 
             return new CreatePaymentResponseDTO(returnUrl.toString(), order.getPayPalOrderId());
 

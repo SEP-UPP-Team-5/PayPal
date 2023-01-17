@@ -1,7 +1,6 @@
 package com.PayPal.repository;
 
 import com.PayPal.model.MyOrder;
-import com.PayPal.model.Order;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
