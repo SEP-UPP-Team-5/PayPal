@@ -1,6 +1,10 @@
 package com.PayPal;
 
-import com.google.gson.Gson;
+import com.PayPal.dto.CreateOrderFromPaymentInfoDTO;
+import com.PayPal.model.MyOrder;
+import com.PayPal.model.PaymentInfo;
+import com.PayPal.repository.OrderRepository;
+import com.PayPal.repository.PaymentInfoRepository;
 import com.paypal.core.PayPalEnvironment;
 import com.paypal.core.PayPalHttpClient;
 import com.paypal.http.HttpResponse;
@@ -19,6 +23,8 @@ import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 
+import static java.lang.Long.parseLong;
+
 @Service
 @Slf4j
 public class OrderService {
@@ -28,6 +34,9 @@ public class OrderService {
     @Autowired
     private PaymentInfoRepository paymentInfoRepository;
 
+    @Autowired
+    private OrderRepository orderRepository;
+
     Logger logger = LoggerFactory.getLogger(OrderService.class);
 
     public OrderService(@Value("${paypal.clientId}") String clientId,
@@ -35,16 +44,15 @@ public class OrderService {
         payPalHttpClient = new PayPalHttpClient(new PayPalEnvironment.Sandbox(clientId, clientSecret));
     }
 
-    public Order createOrder(Double totalAmount, URI returnUrl, String webShopId) throws IOException {
-        final OrderRequest orderRequest = createOrderRequest(totalAmount, returnUrl, webShopId);
+    public MyOrder createOrder(CreateOrderFromPaymentInfoDTO dto, URI returnUrl) throws IOException {
+        final OrderRequest orderRequest = createOrderRequest(dto, returnUrl);
         final OrdersCreateRequest ordersCreateRequest = new OrdersCreateRequest().requestBody(orderRequest);
         final HttpResponse<com.paypal.orders.Order> orderHttpResponse = payPalHttpClient.execute(ordersCreateRequest);
         final com.paypal.orders.Order order = orderHttpResponse.result();
         LinkDescription approveUri = extractApprovalLink(order);
-
         logger.info("Order: ID:" +  orderHttpResponse.result().id() + ", status:{}", orderHttpResponse.result().status());
 
-        return new Order(order.id(), URI.create(approveUri.href()));
+        return orderRepository.save(new MyOrder( 1l, order.id(), URI.create(approveUri.href()), dto.getOrderId())) ;
     }
 
     public void captureOrder(String orderId) throws IOException {
@@ -64,10 +72,10 @@ public class OrderService {
     }
 
 
-    private OrderRequest createOrderRequest(Double totalAmount, URI returnUrl, String merchantId) {
+    private OrderRequest createOrderRequest(CreateOrderFromPaymentInfoDTO dto, URI returnUrl) {
         final OrderRequest orderRequest = new OrderRequest();
         setCheckoutIntent(orderRequest);  // CAPTURE, AUTHORIZE
-        setPurchaseUnits(totalAmount, merchantId, orderRequest);
+        setPurchaseUnits(dto.getTotalAmount(), dto.getMerchantId(), orderRequest);
         setApplicationContext(returnUrl, orderRequest);
         System.out.println("Creating order request");
 
@@ -84,6 +92,9 @@ public class OrderService {
         orderRequest.purchaseUnits(Arrays.asList(purchaseUnitRequest));
     }
 
+    public MyOrder findOrder(String id){
+        return orderRepository.findByPayPalOrderId(id);
+    }
     private void setCheckoutIntent(OrderRequest orderRequest) {
         orderRequest.checkoutPaymentIntent("CAPTURE");
     }

@@ -1,4 +1,4 @@
-package com.PayPal;
+package com.PayPal.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -21,7 +21,7 @@ public class PaymentInfo {
     @GeneratedValue
     @Column(unique=true, nullable=false)
     private Long id;
-    private String paymentId;  //transaction id sa paypala
+    private String paymentId;  //order id sa paypala
     private String payerId;  //PayPal account id
     private String amount;
     private String currency; //poslati sa webshopa????????

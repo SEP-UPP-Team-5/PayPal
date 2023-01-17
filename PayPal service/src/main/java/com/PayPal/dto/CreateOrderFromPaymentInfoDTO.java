@@ -12,5 +12,6 @@ public class CreateOrderFromPaymentInfoDTO {
     private Double totalAmount;
     private String transactionId; //id transakcije sa psp
     private String merchantId; // merchant iz payment metoda
+    private String orderId;  //id ordera sa web shopa, odnosno sa psp
 
 }
