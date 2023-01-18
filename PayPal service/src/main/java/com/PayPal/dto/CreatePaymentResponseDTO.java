@@ -9,6 +9,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class CreatePaymentResponseDTO {
 
-    private String returnUrl;
-    private String payPalOrderId; //
+    private String approvalUrl;
 }

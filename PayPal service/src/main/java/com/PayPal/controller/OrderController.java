@@ -12,9 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.view.RedirectView;
@@ -36,13 +34,14 @@ public class OrderController {
     Logger logger = LoggerFactory.getLogger(OrderService.class);
 
     @GetMapping("/capture")
-    public RedirectView captureOrder(@RequestParam String token) throws IOException {
+    public ResponseEntity<?> captureOrder(@RequestParam String token) throws IOException {
 
         String orderId = token;
-        String pspUrl = "http://localhost:8761/paymentInfo/confirm";
 
         orderService.captureOrder(token);
         MyOrder payPalOrder = orderService.findOrder(orderId);
+        System.out.println(payPalOrder.getWebShopOrderId());
+        String pspUrl = "http://localhost:8761/paymentInfo/confirm/"+ payPalOrder.getWebShopOrderId();
 
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
@@ -57,9 +56,11 @@ public class OrderController {
         }
 
         HttpEntity<String> request = new HttpEntity<>(obj.toString(), headers);
-        restTemplate.postForObject(pspUrl, request, String.class);
+        String captureOrderResponse = restTemplate.postForObject(pspUrl, request, String.class);
+        System.out.println("captureOrderResponse");
+        System.out.println(captureOrderResponse);
 
-        return new RedirectView("http://localhost:4200/confirmation");
+        return new ResponseEntity<>(captureOrderResponse, HttpStatus.OK);
     }
 
 
@@ -70,9 +71,9 @@ public class OrderController {
             final URI returnUrl = orderService.buildReturnUrl(request);
             MyOrder order = orderService.createOrder(dto, returnUrl);
             logger.info("Paypal order object created and approval link for redirection.");
-            orderService.browse(order.getApprovalLink());
+            //orderService.browse(order.getApprovalLink());
 
-            return new CreatePaymentResponseDTO(returnUrl.toString(), order.getPayPalOrderId());
+            return new CreatePaymentResponseDTO(order.getApprovalLink());
 
         } catch (Exception e) {
             logger.error("Exception with creating paypal order object. Error is: " + e);
