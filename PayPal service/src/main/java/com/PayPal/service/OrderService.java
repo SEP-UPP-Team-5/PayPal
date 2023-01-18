@@ -62,12 +62,13 @@ public class OrderService {
         logger.info("Order: ID:" +  httpResponse.result().id() + ", price: " + httpResponse.result().purchaseUnits().get(0).payments().captures().get(0).amount().value() + ", status:{}", httpResponse.result().status() + ", payerId: " + httpResponse.result().payer().payerId());
 
         PaymentInfo paymentInfo = new PaymentInfo();
-        paymentInfo.setPaymentId(httpResponse.result().id());
+        paymentInfo.setPaymentId(httpResponse.result().purchaseUnits().get(0).payments().captures().get(0).id());
         paymentInfo.setPayerId(httpResponse.result().payer().payerId()); // PayPal account ID
         paymentInfo.setAmount(httpResponse.result().purchaseUnits().get(0).payments().captures().get(0).amount().value());
         paymentInfo.setCurrency(httpResponse.result().purchaseUnits().get(0).payments().captures().get(0).amount().currencyCode());
         paymentInfo.setDate(httpResponse.result().purchaseUnits().get(0).payments().captures().get(0).createTime());
         paymentInfo.setStatus(httpResponse.result().status());
+        //paymentInfo.setPayerId(httpResponse.result().purchaseUnits().get(0).payee().merchantId());
         paymentInfoRepository.save(paymentInfo);
     }
 
