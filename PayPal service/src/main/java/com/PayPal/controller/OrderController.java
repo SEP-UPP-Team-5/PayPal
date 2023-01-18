@@ -1,5 +1,6 @@
 package com.PayPal.controller;
 
+import com.PayPal.dto.CaptureOrderResponseDTO;
 import com.PayPal.dto.CreateOrderFromPaymentInfoDTO;
 import com.PayPal.dto.CreatePaymentResponseDTO;
 import com.PayPal.model.MyOrder;
@@ -34,14 +35,12 @@ public class OrderController {
     Logger logger = LoggerFactory.getLogger(OrderService.class);
 
     @GetMapping("/capture")
-    public ResponseEntity<?> captureOrder(@RequestParam String token) throws IOException {
+    public ResponseEntity<?> captureOrder(@RequestParam String token, @RequestParam String PayerID) throws IOException {
 
         String orderId = token;
-
         orderService.captureOrder(token);
         MyOrder payPalOrder = orderService.findOrder(orderId);
-        System.out.println(payPalOrder.getWebShopOrderId());
-        String pspUrl = "http://localhost:8761/paymentInfo/confirm/"+ payPalOrder.getWebShopOrderId();
+        String pspUrl = "http://localhost:8761/paymentInfo/confirm";
 
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
@@ -49,16 +48,14 @@ public class OrderController {
         JSONObject obj = new JSONObject();
         try {
             obj.put("webShopOrderId", payPalOrder.getWebShopOrderId());
-            //obj.put("payerId", payPalOrder.getWebShopOrderId());
+            obj.put("payerId", PayerID);
 
         } catch (JSONException e) {
             e.printStackTrace();
         }
 
         HttpEntity<String> request = new HttpEntity<>(obj.toString(), headers);
-        String captureOrderResponse = restTemplate.postForObject(pspUrl, request, String.class);
-        System.out.println("captureOrderResponse");
-        System.out.println(captureOrderResponse);
+        CaptureOrderResponseDTO captureOrderResponse = restTemplate.postForObject(pspUrl, request, CaptureOrderResponseDTO.class);
 
         return new ResponseEntity<>(captureOrderResponse, HttpStatus.OK);
     }
