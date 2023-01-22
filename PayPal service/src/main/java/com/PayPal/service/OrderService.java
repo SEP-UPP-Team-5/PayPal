@@ -44,10 +44,12 @@ public class OrderService {
         payPalHttpClient = new PayPalHttpClient(new PayPalEnvironment.Sandbox(clientId, clientSecret));
     }
 
-    public MyOrder createOrder(CreateOrderFromPaymentInfoDTO dto, URI returnUrl) throws IOException {
+    public MyOrder createOrder(CreateOrderFromPaymentInfoDTO dto, URI returnUrl) throws Exception {
         final OrderRequest orderRequest = createOrderRequest(dto, returnUrl);
         final OrdersCreateRequest ordersCreateRequest = new OrdersCreateRequest().requestBody(orderRequest);
         final HttpResponse<com.paypal.orders.Order> orderHttpResponse = payPalHttpClient.execute(ordersCreateRequest);
+        if(orderHttpResponse.statusCode() != 201)
+            throw new Exception("Error-Code: " + orderHttpResponse.statusCode() + " Status-Message: " + orderHttpResponse.result().status());
         final com.paypal.orders.Order order = orderHttpResponse.result();
         LinkDescription approveUri = extractApprovalLink(order);
         logger.info("Order: ID:" +  orderHttpResponse.result().id() + ", status:{}", orderHttpResponse.result().status());
@@ -68,7 +70,7 @@ public class OrderService {
         paymentInfo.setCurrency(httpResponse.result().purchaseUnits().get(0).payments().captures().get(0).amount().currencyCode());
         paymentInfo.setDate(httpResponse.result().purchaseUnits().get(0).payments().captures().get(0).createTime());
         paymentInfo.setStatus(httpResponse.result().status());
-        //paymentInfo.setPayerId(httpResponse.result().purchaseUnits().get(0).payee().merchantId());
+        //paymentInfo.setMerchantId(httpResponse.result().purchaseUnits().get(0).payee().merchantId());
         paymentInfoRepository.save(paymentInfo);
     }
 
