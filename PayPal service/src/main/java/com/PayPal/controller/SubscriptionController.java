@@ -6,6 +6,7 @@ import com.PayPal.model.*;
 import com.PayPal.model.enums.IntervalUnit;
 import com.PayPal.model.enums.SetupFeeFailureAction;
 import com.PayPal.model.enums.TenureType;
+import com.PayPal.service.SubscriptionService;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.paypal.base.codec.binary.Base64;
@@ -13,6 +14,7 @@ import com.paypal.orders.LinkDescription;
 import lombok.extern.slf4j.Slf4j;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.util.LinkedMultiValueMap;
@@ -33,6 +35,9 @@ import java.util.NoSuchElementException;
 public class SubscriptionController {
 
     private final String APPROVAL_LINK = "approve";
+
+    @Autowired
+    private SubscriptionService subscriptionService;
 
     @Value("${paypal.clientId}") String clientId;
     @Value("${paypal.clientSecret}") String clientSecret;
@@ -110,11 +115,15 @@ public class SubscriptionController {
         HttpEntity<String> request = new HttpEntity<>(builder.toJson(billingPlan), headers);
         System.out.println("REQUEST");
         System.out.println(builder.toJson(request));
-        String response = restTemplate.postForObject(paypalUrl, request, String.class);
+        BillingPlan response = restTemplate.postForObject(paypalUrl, request, BillingPlan.class);
         System.out.println("RESPONSE");
         System.out.println(response);
+        SubscriptionInfo subscriptionInfo = new SubscriptionInfo();
+        subscriptionInfo.setBillingPlanName(response.getName());
+        subscriptionInfo.setBillingPlanId(response.getId());
+        subscriptionService.save(subscriptionInfo);
 
-        return new ResponseEntity<>(builder.toJson(response), HttpStatus.OK);
+        return new ResponseEntity<>(response.getId(), HttpStatus.OK);
     }
 
     @PostMapping(path = "/subscription")

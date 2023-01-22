@@ -1,9 +1,7 @@
 package com.PayPal.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
 
 import java.util.ArrayList;
 
@@ -12,6 +10,8 @@ import java.util.ArrayList;
 @NoArgsConstructor
 @AllArgsConstructor
 public class BillingPlan {
+
+    private String id;
     private String product_id;
     private String name;
     private String description;
