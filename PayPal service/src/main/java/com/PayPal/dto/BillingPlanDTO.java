@@ -7,4 +7,4 @@ import lombok.Setter;
 @Setter
 public class BillingPlanDTO {
     private String product_id;
-  }
+}

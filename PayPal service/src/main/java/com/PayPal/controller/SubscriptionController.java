@@ -1,6 +1,7 @@
 package com.PayPal.controller;
 
 import com.PayPal.dto.BillingPlanDTO;
+import com.PayPal.dto.CreateSubscriptionResponseDTO;
 import com.PayPal.dto.SubscriptionDTO;
 import com.PayPal.model.*;
 import com.PayPal.model.enums.IntervalUnit;
@@ -9,6 +10,7 @@ import com.PayPal.model.enums.TenureType;
 import com.PayPal.service.SubscriptionService;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.paypal.api.payments.Links;
 import com.paypal.base.codec.binary.Base64;
 import com.paypal.orders.LinkDescription;
 import lombok.extern.slf4j.Slf4j;
@@ -19,12 +21,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
+import java.awt.*;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
@@ -35,7 +38,6 @@ import java.util.NoSuchElementException;
 public class SubscriptionController {
 
     private final String APPROVAL_LINK = "approve";
-
     @Autowired
     private SubscriptionService subscriptionService;
 
@@ -43,7 +45,7 @@ public class SubscriptionController {
     @Value("${paypal.clientSecret}") String clientSecret;
 
     @PostMapping("/product")
-    public ResponseEntity<Product> createProduct(@RequestBody Product product) throws JSONException {
+    public ResponseEntity<?> createProduct(@RequestBody Product product) throws JSONException {
         String token = accessToken();
 
         String paypalUrl = "https://api-m.sandbox.paypal.com/v1/catalogs/products";
@@ -58,13 +60,12 @@ public class SubscriptionController {
 
         HttpEntity<String> request = new HttpEntity<>(obj.toString(), headers);
         Product productResponse = restTemplate.postForObject(paypalUrl, request, Product.class);
-        System.out.println(productResponse);
 
-        return ResponseEntity.ok(productResponse);
+        return new ResponseEntity<>(productResponse.getId(), HttpStatus.OK);
     }
 
-    @PostMapping("/billingPlan")
-    public ResponseEntity<?> createSubscriptionPlan(@RequestBody BillingPlanDTO billingPlanDTO) throws JSONException {
+    @PostMapping("/billingPlan/{product_id}")
+    public ResponseEntity<?> createBillingPlan(@PathVariable String product_id) throws JSONException {
         String token = accessToken();
 
         String paypalUrl = "https://api-m.sandbox.paypal.com/v1/billing/plans";
@@ -73,13 +74,12 @@ public class SubscriptionController {
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(token);
         BillingPlan billingPlan = new BillingPlan();
-        billingPlan.setProduct_id(billingPlanDTO.getProduct_id());
-        billingPlan.setName("Book renting service plan");
-        billingPlan.setDescription("Book renting service plan, per month charging");
+        billingPlan.setProduct_id(product_id);
+        billingPlan.setName("Subscribe to the paying plan");
+        billingPlan.setDescription("Book paying plan, per month charging");
         billingPlan.setStatus("ACTIVE");
-        // Create Biiling cycle
-        Frequency f = new Frequency(IntervalUnit.MONTH,1);
 
+        Frequency f = new Frequency(IntervalUnit.MONTH,1);
         //First Billing Cycle
         BillingCycle billingCycle = new BillingCycle();
         PricingScheme pricingScheme = new PricingScheme(new FixedPrice("10","USD"));
@@ -126,7 +126,7 @@ public class SubscriptionController {
         return new ResponseEntity<>(response.getId(), HttpStatus.OK);
     }
 
-    @PostMapping(path = "/subscription")
+    @PostMapping(path = "/subscription", produces = "application/json")
     public ResponseEntity<?> createSubscriptionPlan(@RequestBody SubscriptionDTO subscriptionDTO){
         String token = accessToken();
 
@@ -136,22 +136,45 @@ public class SubscriptionController {
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(token);
 
-
         Gson builder = new GsonBuilder().create();
         HttpEntity<String> request = new HttpEntity<>(builder.toJson(subscriptionDTO), headers);
         System.out.println("REQUEST");
         System.out.println(builder.toJson(request));
-        String response = restTemplate.postForObject(paypalUrl, request, String.class);
+        CreateSubscriptionResponseDTO response = restTemplate.postForObject(paypalUrl, request, CreateSubscriptionResponseDTO.class);
         System.out.println("RESPONSE");
         System.out.println(response);
 
-        return new ResponseEntity<>(response, HttpStatus.OK);
+       /* for(Links link: response.getLinks()) {
+            if(link.getRel() == "approve") {
+                return new ResponseEntity<>(extractApprovalLink(), HttpStatus.OK);
+            }
+        }*/
+
+        browse(extractApprovalLink(response).getHref());
+        return new ResponseEntity<>(extractApprovalLink(response).getHref(), HttpStatus.OK);
     }
 
+    private static void browse(String url) {
+        if(Desktop.isDesktopSupported()){
+            Desktop desktop = Desktop.getDesktop();
+            try {
+                desktop.browse(new URI(url));
+            } catch (IOException | URISyntaxException e) {
+                e.printStackTrace();
+            }
+        }else{
+            Runtime runtime = Runtime.getRuntime();
+            try {
+                runtime.exec("rundll32 url.dll,FileProtocolHandler " + url);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
-    private LinkDescription extractApprovalLink(com.paypal.orders.Order order) {
-        LinkDescription approveUri = order.links().stream()
-                .filter(link -> APPROVAL_LINK.equals(link.rel()))
+    private Links extractApprovalLink(CreateSubscriptionResponseDTO dto) {
+        Links approveUri = dto.getLinks().stream()
+                .filter(link -> APPROVAL_LINK.equals(link.getRel()))
                 .findFirst()
                 .orElseThrow(NoSuchElementException::new);
         return approveUri;

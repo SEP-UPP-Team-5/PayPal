@@ -16,7 +16,4 @@ public class SubscriptionService {
 
     public void save(SubscriptionInfo subscriptionInfo){ subscriptionInfoRepository.save(subscriptionInfo); }
 
-    public SubscriptionInfo findOne(Long id){
-        return subscriptionInfoRepository.findById(id).get();
-    }
 }
