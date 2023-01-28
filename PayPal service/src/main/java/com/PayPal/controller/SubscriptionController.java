@@ -44,37 +44,28 @@ public class SubscriptionController {
     @Value("${paypal.clientId}") String clientId;
     @Value("${paypal.clientSecret}") String clientSecret;
 
-    @PostMapping("/product")
-    public ResponseEntity<?> createProduct(@RequestBody Product product) throws JSONException {
+    @PostMapping("/billingPlan")
+    public ResponseEntity<?> createBillingPlan() throws JSONException {
         String token = accessToken();
 
-        String paypalUrl = "https://api-m.sandbox.paypal.com/v1/catalogs/products";
+        String createProduct = "https://api-m.sandbox.paypal.com/v1/catalogs/products";
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(token);
         JSONObject obj = new JSONObject();
-        obj.put("name", product.getName());
-        obj.put("description", product.getDescription());
-        obj.put("type", product.getType());  //PHYSICAL, DIGITAL, SERVICE
+        obj.put("name", "name");
+        obj.put("description", "description");
+        obj.put("type", "PHYSICAL");  //PHYSICAL, DIGITAL, SERVICE
 
         HttpEntity<String> request = new HttpEntity<>(obj.toString(), headers);
-        Product productResponse = restTemplate.postForObject(paypalUrl, request, Product.class);
+        Product productResponse = restTemplate.postForObject(createProduct, request, Product.class);
 
-        return new ResponseEntity<>(productResponse.getId(), HttpStatus.OK);
-    }
-
-    @PostMapping("/billingPlan/{product_id}")
-    public ResponseEntity<?> createBillingPlan(@PathVariable String product_id) throws JSONException {
-        String token = accessToken();
-
-        String paypalUrl = "https://api-m.sandbox.paypal.com/v1/billing/plans";
-        RestTemplate restTemplate = new RestTemplate();
-        HttpHeaders headers = new HttpHeaders();
+        String createBillingPlan = "https://api-m.sandbox.paypal.com/v1/billing/plans";
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(token);
         BillingPlan billingPlan = new BillingPlan();
-        billingPlan.setProduct_id(product_id);
+        billingPlan.setProduct_id(productResponse.getId());
         billingPlan.setName("Subscribe to the paying plan");
         billingPlan.setDescription("Book paying plan, per month charging");
         billingPlan.setStatus("ACTIVE");
@@ -112,10 +103,10 @@ public class SubscriptionController {
         billingPlan.setTaxes(taxes);
 
         Gson builder = new GsonBuilder().create();
-        HttpEntity<String> request = new HttpEntity<>(builder.toJson(billingPlan), headers);
+        HttpEntity<String> requestPlan = new HttpEntity<>(builder.toJson(billingPlan), headers);
         System.out.println("REQUEST");
         System.out.println(builder.toJson(request));
-        BillingPlan response = restTemplate.postForObject(paypalUrl, request, BillingPlan.class);
+        BillingPlan response = restTemplate.postForObject(createBillingPlan, requestPlan, BillingPlan.class);
         System.out.println("RESPONSE");
         System.out.println(response);
         SubscriptionInfo subscriptionInfo = new SubscriptionInfo();
@@ -123,8 +114,9 @@ public class SubscriptionController {
         subscriptionInfo.setBillingPlanId(response.getId());
         subscriptionService.save(subscriptionInfo);
 
-        return new ResponseEntity<>(response.getId(), HttpStatus.OK);
+        return new ResponseEntity<>( response.getId(), HttpStatus.CREATED);
     }
+
 
     @PostMapping(path = "/subscription", produces = "application/json")
     public ResponseEntity<?> createSubscriptionPlan(@RequestBody SubscriptionDTO subscriptionDTO){
@@ -143,12 +135,6 @@ public class SubscriptionController {
         CreateSubscriptionResponseDTO response = restTemplate.postForObject(paypalUrl, request, CreateSubscriptionResponseDTO.class);
         System.out.println("RESPONSE");
         System.out.println(response);
-
-       /* for(Links link: response.getLinks()) {
-            if(link.getRel() == "approve") {
-                return new ResponseEntity<>(extractApprovalLink(), HttpStatus.OK);
-            }
-        }*/
 
         browse(extractApprovalLink(response).getHref());
         return new ResponseEntity<>(extractApprovalLink(response).getHref(), HttpStatus.OK);
