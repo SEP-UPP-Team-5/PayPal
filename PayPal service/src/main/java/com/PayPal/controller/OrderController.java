@@ -56,7 +56,7 @@ public class OrderController {
 
         HttpEntity<String> request = new HttpEntity<>(obj.toString(), headers);
         CaptureOrderResponseDTO captureOrderResponse = restTemplate.postForObject(pspUrl, request, CaptureOrderResponseDTO.class);
-
+        orderService.browse("http://localhost:4200/confirmation/" + captureOrderResponse.getWebShopOrderId());
         return new ResponseEntity<>(captureOrderResponse, HttpStatus.OK);  // TODO: response je url do web stranice na web shop frontu
     }
 
