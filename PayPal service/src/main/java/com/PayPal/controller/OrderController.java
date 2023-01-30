@@ -14,12 +14,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
 import org.springframework.http.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.view.RedirectView;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 
 import static java.lang.Long.parseLong;
 
@@ -35,7 +37,7 @@ public class OrderController {
     Logger logger = LoggerFactory.getLogger(OrderService.class);
 
     @GetMapping("/capture")
-    public ResponseEntity<?> captureOrder(@RequestParam String token, @RequestParam String PayerID) throws IOException {
+    public ResponseEntity<?> captureOrder(@RequestParam String token, @RequestParam String PayerID) throws IOException, URISyntaxException {
 
         String orderId = token;
         orderService.captureOrder(token);
@@ -56,12 +58,16 @@ public class OrderController {
 
         HttpEntity<String> request = new HttpEntity<>(obj.toString(), headers);
         CaptureOrderResponseDTO captureOrderResponse = restTemplate.postForObject(pspUrl, request, CaptureOrderResponseDTO.class);
-        orderService.browse("http://localhost:4200/confirmation/" + captureOrderResponse.getWebShopOrderId());
-        return new ResponseEntity<>(captureOrderResponse, HttpStatus.OK);  // TODO: response je url do web stranice na web shop frontu
+        URI yahoo = new URI("http://localhost:4200/confirmation/" + captureOrderResponse.getWebShopOrderId());
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setLocation(yahoo);
+        //orderService.browse("http://localhost:4200/confirmation/" + captureOrderResponse.getWebShopOrderId());
+        return new ResponseEntity<>(httpHeaders, HttpStatus.valueOf(302));  // TODO: response je url do web stranice na web shop frontu
     }
 
 
     @PostMapping("/create")
+    @PreAuthorize("hasRole('Customer')")
     public CreatePaymentResponseDTO creatingOrder(@RequestBody CreateOrderFromPaymentInfoDTO dto, HttpServletRequest request){
 
         try {
