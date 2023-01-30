@@ -14,16 +14,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
 import org.springframework.http.*;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.servlet.view.RedirectView;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-
-import static java.lang.Long.parseLong;
 
 
 @RestController
@@ -67,7 +62,6 @@ public class OrderController {
 
 
     @PostMapping("/create")
-    @PreAuthorize("hasRole('Customer')")
     public CreatePaymentResponseDTO creatingOrder(@RequestBody CreateOrderFromPaymentInfoDTO dto, HttpServletRequest request){
 
         try {
