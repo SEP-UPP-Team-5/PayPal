@@ -13,5 +13,7 @@ public class CreateOrderFromPaymentInfoDTO {
     private String transactionId; //id transakcije sa psp
     private String merchantId; // merchant iz payment metoda
     private String orderId;  //id ordera sa web shopa, odnosno sa psp
+    private String failedUrl; // nema dovoljno para
+    private String errorUrl; //greska kod kreiranja ordera
 
 }

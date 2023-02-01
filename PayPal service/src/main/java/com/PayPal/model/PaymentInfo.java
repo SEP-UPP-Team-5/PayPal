@@ -19,11 +19,12 @@ public class PaymentInfo {
     @GeneratedValue
     @Column(unique=true, nullable=false)
     private Long id;
-    private String paymentId;  //order id sa paypala
+    private String paymentId;
     private String payerId;  //PayPal account id
     private String amount;
-    private String currency; //poslati sa webshopa????????
-    private String date; // vreme kad je izvrseno placanje na paypalu
+    private String currency;
+    private String paymentTime;
     private String status;
     private String merchantId;
+    private String payPalOrderId;
 }

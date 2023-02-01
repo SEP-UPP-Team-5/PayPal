@@ -1,0 +1,8 @@
+[2023-02-01 12:12:43.954] - 17948 INFO [restartedMain] --- org.apache.catalina.core.StandardService: Starting service [Tomcat]
+[2023-02-01 12:12:43.967] - 17948 INFO [restartedMain] --- org.apache.catalina.core.StandardEngine: Starting Servlet engine: [Apache Tomcat/10.1.1]
+[2023-02-01 12:12:44.066] - 17948 INFO [restartedMain] --- org.apache.catalina.core.ContainerBase.[Tomcat].[localhost].[/]: Initializing Spring embedded WebApplicationContext
+[2023-02-01 12:12:44.260] - 17948 INFO [restartedMain] --- org.hibernate.jpa.internal.util.LogHelper: HHH000204: Processing PersistenceUnitInfo [name: default]
+[2023-02-01 12:12:44.318] - 17948 INFO [restartedMain] --- org.hibernate.Version: HHH000412: Hibernate ORM core version 6.1.5.Final
+[2023-02-01 12:12:44.510] - 17948 WARN [restartedMain] --- org.hibernate.orm.deprecation: HHH90000021: Encountered deprecated setting [javax.persistence.sharedCache.mode], use [jakarta.persistence.sharedCache.mode] instead
+[2023-02-01 12:12:44.949] - 17948 INFO [restartedMain] --- SQL dialect: HHH000400: Using dialect: org.hibernate.dialect.PostgreSQLDialect
+[2023-02-01 12:12:45.910] - 17948 INFO [restartedMain] --- org.hibernate.engine.transaction.jta.platform.internal.JtaPlatformInitiator: HHH000490: Using JtaPlatform implementation: [org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform]
