@@ -14,17 +14,11 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-public class PaymentInfo {
+public class SubscriptionInfo {
     @Id
     @GeneratedValue
     @Column(unique=true, nullable=false)
     private Long id;
-    private String paymentId;
-    private String payerId;  //PayPal account id
-    private String amount;
-    private String currency;
-    private String paymentTime;
-    private String status;
-    private String merchantId;
-    private String payPalOrderId;
+    private String billingPlanId;
+    private String billingPlanName;
 }

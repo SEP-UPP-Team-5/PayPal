@@ -12,16 +12,13 @@ import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
+import org.springframework.core.env.Environment;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.servlet.view.RedirectView;
-
 import java.io.IOException;
 import java.net.URI;
-
-import static java.lang.Long.parseLong;
+import java.net.URISyntaxException;
 
 
 @RestController
@@ -30,18 +27,20 @@ import static java.lang.Long.parseLong;
 public class OrderController {
     @Autowired
     private OrderService orderService;
+
     @Autowired
-    private LoadBalancerClient loadBalancerClient;
+    private Environment env;
+
     Logger logger = LoggerFactory.getLogger(OrderService.class);
 
     @GetMapping("/capture")
-    public ResponseEntity<?> captureOrder(@RequestParam String token, @RequestParam String PayerID) throws IOException {
+    public ResponseEntity<?> captureOrder(@RequestParam String token, @RequestParam String PayerID) throws Exception, IOException {
 
         String orderId = token;
         orderService.captureOrder(token);
         MyOrder payPalOrder = orderService.findOrder(orderId);
-        String pspUrl = "http://localhost:8761/paymentInfo/confirm";
 
+        String pspUrl = env.getProperty("psp.host") + "/paymentInfo/confirmPayPal";
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -52,12 +51,26 @@ public class OrderController {
 
         } catch (JSONException e) {
             e.printStackTrace();
+            URI webShopUrl = new URI(env.getProperty("webShop.frontend.host") + "/error/" + payPalOrder.getWebShopOrderId());
+            HttpHeaders httpHeaders = new HttpHeaders();
+            httpHeaders.setLocation(webShopUrl);
+            return new ResponseEntity<>(httpHeaders, HttpStatus.valueOf(302));
         }
 
         HttpEntity<String> request = new HttpEntity<>(obj.toString(), headers);
-        CaptureOrderResponseDTO captureOrderResponse = restTemplate.postForObject(pspUrl, request, CaptureOrderResponseDTO.class);
+        try {
+            CaptureOrderResponseDTO captureOrderResponse = restTemplate.postForObject(pspUrl, request, CaptureOrderResponseDTO.class);
+            URI webShopUrl = new URI(env.getProperty("webShop.frontend.host") + "/confirmation/" + captureOrderResponse.getWebShopOrderId());
+            HttpHeaders httpHeaders = new HttpHeaders();
+            httpHeaders.setLocation(webShopUrl);
+            return new ResponseEntity<>(httpHeaders, HttpStatus.valueOf(302));
+        } catch (Exception e){
+            URI webShopUrl = new URI(env.getProperty("webShop.frontend.host") + "/error/" + payPalOrder.getWebShopOrderId());
+            HttpHeaders httpHeaders = new HttpHeaders();
+            httpHeaders.setLocation(webShopUrl);
+            return new ResponseEntity<>(httpHeaders, HttpStatus.valueOf(302));
+        }
 
-        return new ResponseEntity<>(captureOrderResponse, HttpStatus.OK);
     }
 
 
@@ -68,8 +81,6 @@ public class OrderController {
             final URI returnUrl = orderService.buildReturnUrl(request);
             MyOrder order = orderService.createOrder(dto, returnUrl);
             logger.info("Paypal order object created and approval link for redirection.");
-            //orderService.browse(order.getApprovalLink());
-
             return new CreatePaymentResponseDTO(order.getApprovalLink());
 
         } catch (Exception e) {
