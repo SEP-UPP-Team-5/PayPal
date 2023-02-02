@@ -56,12 +56,14 @@ public class OrderService {
         final HttpResponse<com.paypal.orders.Order> orderHttpResponse = payPalHttpClient.execute(ordersCreateRequest);
         if(orderHttpResponse.statusCode() != 201){
             browse(dto.getErrorUrl() + "/" + dto.getOrderId());
+            logger.error("Error with adding order with id: " + orderHttpResponse.result().id());
             throw new Exception("Error-Code: " + orderHttpResponse.statusCode() + " Status-Message: " + orderHttpResponse.result().status());
         }
         final com.paypal.orders.Order order = orderHttpResponse.result();
         LinkDescription approveUri = extractApprovalLink(order);
-        logger.info("Order: ID:" +  orderHttpResponse.result().id() + ", status:{}", orderHttpResponse.result().status());
         URI appUri = URI.create(approveUri.href());
+        logger.info("Order: ID:" +  orderHttpResponse.result().id() + ", status:{}", orderHttpResponse.result().status());
+
         PaymentInfo transaction = new PaymentInfo();
         transaction.setMerchantId(dto.getMerchantId());
         transaction.setAmount(dto.getTotalAmount().toString());
@@ -69,6 +71,7 @@ public class OrderService {
         transaction.setPayPalOrderId(orderHttpResponse.result().id());
         paymentInfoRepository.save(transaction);
 
+        logger.info("Created transaction with id: " + transaction.getId() + " for web shop order: " + dto.getOrderId());
         return orderRepository.save(new MyOrder( 1l, order.id(), appUri.toString(), dto.getOrderId())) ;
     }
 
@@ -77,6 +80,7 @@ public class OrderService {
         final HttpResponse<com.paypal.orders.Order> httpResponse = payPalHttpClient.execute(ordersCaptureRequest);
 
         if(httpResponse.statusCode() != 201){
+            logger.error("Error with adding order with id: " + httpResponse.result().id());
             throw new Exception("Error-Code: " + httpResponse.statusCode() + " Status-Message: " + httpResponse.result().status());
         }
         logger.info("Order: ID:" +  httpResponse.result().id() + ", price: " + httpResponse.result().purchaseUnits().get(0).payments().captures().get(0).amount().value() + ", status:{}", httpResponse.result().status() + ", payerId: " + httpResponse.result().payer().payerId());
@@ -87,6 +91,9 @@ public class OrderService {
         paymentInfo.setCurrency(httpResponse.result().purchaseUnits().get(0).payments().captures().get(0).amount().currencyCode());
         paymentInfo.setPaymentTime(httpResponse.result().purchaseUnits().get(0).payments().captures().get(0).createTime());
         paymentInfo.setStatus(httpResponse.result().status());
+
+        logger.info("Transaction with id: " + paymentInfo.getId() + " updated successfully with status: " + httpResponse.result().status());
+
         paymentInfoRepository.save(paymentInfo);
     }
 

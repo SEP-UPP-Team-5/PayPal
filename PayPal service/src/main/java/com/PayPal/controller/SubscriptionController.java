@@ -12,7 +12,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.paypal.api.payments.Links;
 import com.paypal.base.codec.binary.Base64;
-import com.paypal.orders.LinkDescription;
 import lombok.extern.slf4j.Slf4j;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
